@@ -1,0 +1,85 @@
+---
+title: "P8105 HW3 - jsm2298"
+output: github_document
+date: "2026-10-15"
+---
+# Load Packages
+```{r}
+library(p8105.datasets)
+library(tidyverse)
+```
+
+## Problem 1
+### Load Data:
+```{r}
+data("ny_noaa")
+```
+
+### The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue. Then, do or answer the following (commenting on the results of each):
+
+### Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?
+
+### Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+
+### Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
+
+
+
+## Problem 2
+
+### Accelerometers have become an appealing alternative to self-report techniques for studying physical activity in observational studies and clinical trials, largely because of their relative objectivity. During observation periods, the devices can measure MIMS in a short period; one-minute intervals are common. Because accelerometers can be worn comfortably and unobtrusively, they produce around-the-clock observations.
+
+### This problem uses accelerometer data collected on 250 participants in the NHANES study. The participants’ demographic data can be downloaded here, and their accelerometer data can be downloaded here. Variables *MIMS are the MIMS values for each minute of a 24-hour day starting at midnight.
+
+### Load, tidy, merge, and otherwise organize the data sets. Your final dataset should include all originally observed variables; exclude participants less than 21 years of age, and those with missing demographic data; and encode data with reasonable variable classes (i.e. not numeric, and using factors with the ordering of tables and plots in mind).
+
+#### Load Data
+```{r}
+nhanes_accel_df <- read_csv("data/nhanes_accel.csv")
+nhanes_covar_df <- read_csv("data/nhanes_covar.csv", skip = 4)
+```
+#### Tidy the acceleration data:
+```{r}
+nhanes_accel_df = nhanes_accel_df |> 
+  janitor::clean_names() |> 
+  pivot_longer(contains("min"),
+               names_to = "min",
+               values_to = "accel",
+               names_prefix = "min")
+```
+
+#### Tidy covariates:
+```{r}
+nhanes_covar_df = nhanes_covar_df |> 
+  janitor::clean_names() |> ## Clean the names.
+  mutate(sex = as.factor( ## Recode factors and ordering.
+    case_when(
+      sex == 2 ~ "female",
+      sex == 1 ~ "male"
+    )
+  ),
+  education = factor(
+    case_when(
+      education == 1 ~ "less than hs",
+      education == 2 ~ "hs equivalent",
+      education == 3 ~ "more than hs"
+    ), levels = c("less than hs", "hs equivalent", "more than hs")
+  )) |> 
+  drop_na() ## Remove NA values
+```
+
+#### Merge data:
+```{r}
+nhanes_df = nhanes_accel_df |> 
+  full_join(nhanes_covar_df, by = "seqn") 
+```
+
+
+### Produce a reader-friendly table for the number of men and women in each education category, and create a visualization of the age distributions for men and women in each education category. Comment on these items.
+
+### Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant. Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. Comment on your plot.
+
+### Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
+
+
