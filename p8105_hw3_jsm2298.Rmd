@@ -197,7 +197,7 @@ This plot allows us to draw a few key conclusions from the data. Primarily, we s
 ```{r}
 citi_df |> 
   filter(year == "2024") |> 
-  filter(duration < 60) |> # Filter to durations for less than 50 for interpretation.
+  filter(duration < 60) |> # Filter to durations for less than 60 for interpretation.
   ggplot(aes(x = duration, fill = rideable_type)) +
   geom_density(alpha = 0.5) +
   labs(x = "Duration", y = "Density", fill = "Bike Type") +
