@@ -28,7 +28,7 @@ nhanes_accel_df = nhanes_accel_df |>
   janitor::clean_names() |> 
   pivot_longer(contains("min"),
                names_to = "min",
-               values_to = "accel",
+               values_to = "activity",
                names_prefix = "min") |> 
   mutate(min = as.numeric(min))
 ```
@@ -66,7 +66,7 @@ nhanes_df = nhanes_accel_df |>
 ```{r}
 ## Create the table:
 table_1 = nhanes_df |> 
-  pivot_wider(names_from = min, values_from = accel) |>
+  pivot_wider(names_from = min, values_from = activity) |>
   group_by(education, sex) |> 
   summarize(n = n())
 
@@ -76,7 +76,7 @@ print(table_1)
 
 ## Create the plot:
 nhanes_df |> 
-  pivot_wider(names_from = min, values_from = accel) |>
+  pivot_wider(names_from = min, values_from = activity) |>
   ggplot(aes(x = age, color = sex, fill = sex)) +
   geom_density(alpha = 0.4) +
   facet_wrap(. ~ education)
@@ -90,13 +90,13 @@ The plot shows interesting differences in the distribution of age across differe
 ```{r}
 nhanes_df |> 
   group_by(seqn, age, sex, education) |> 
-  summarize(mean_accel = mean(accel)) |> 
-  ggplot(aes(x = age, y = mean_accel, color = sex)) +
+  summarize(total_activity = sum(activity)) |> 
+  ggplot(aes(x = age, y = total_activity, color = sex)) +
   geom_point() + 
   geom_smooth(method = "lm", se = F) +
   facet_wrap(. ~ education) +
-  labs(x = "Age", y = "Mean Acceleration (Per Subject)",
-       title = "Age vs Mean Activity Between Subjects",
+  labs(x = "Age", y = "Total Activity (Sum Per Subject)",
+       title = "Age vs Total Activity Between Subjects",
        subtitle = "Seperated by Education Level and Sex") 
   
 ```
@@ -108,23 +108,17 @@ This plot shows a unique example of moderation based on level of education. Acro
 ```{r}
 ## Plot data with points:
 nhanes_df |> 
-  group_by(min, sex, education) |> 
-  summarize(mean_accel = mean(accel)) |> 
-  ggplot(aes(x = min, y = mean_accel, color = sex)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~ education, nrow = 1)
-
-## Plot only smoothed lines:
-nhanes_df |> 
-  ggplot(aes(x = min, y = accel, color = sex)) +
+  filter(
+    activity >= quantile(activity, 0.25, na.rm = TRUE) - 1.5 * IQR(activity, na.rm = TRUE) & # Filter data to remove extreme outliers
+    activity <= quantile(activity, 0.75, na.rm = TRUE) + 1.5 * IQR(activity, na.rm = TRUE)
+  ) |> 
+  ggplot(aes(x = min, y = activity, color = sex)) +
+  geom_point(alpha = 0.03) +
   geom_smooth() +
   facet_wrap(~ education, nrow = 1)
 ```
 
-The curves show similar relationships across each education group with slight differences. We see across sex and education, that activity peaks in the waking hours of the day time and drops into the evening. Those with less than a high school degree seem to be more active earlier in the day with steeper decreases as the day progresses, while those with a high school diploma or above seem to have a more constant activity pattern during the day and then a sharper decline in the evening. The major sex differences are found in the group with a high school degree or above, as male participants seem to show less activity during the day.
-
-I decided to interpret the question as asking for mean activity across each minute for each group. Otherwise, the points are far too overwhelming to gather meaningful data from the plot. I also included a plot with only the fitted spline equations to the original data to see where the underlying trends of activity show.
+I decided to remove outliers from the data to improve the readability of the plot. When outliers were included, the plot became very hard to interpret.The curves show similar relationships across each education group with slight differences. We see across sex and education, that activity peaks in the waking hours of the day time and drops into the evening. Those with less than a high school degree seem to be more active earlier in the day with steeper decreases as the day progresses, while those with a high school diploma or above seem to have a more constant activity pattern during the day and then a sharper decline in the evening. The major sex differences are found in the group with a high school degree or above, as male participants seem to show less activity during the day.
 
 
 ## Problem 3
